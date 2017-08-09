@@ -1,4 +1,5 @@
 #include "StreamReader.h"
+#include "Exception.h"
 #include <string.h>
 #include <assert.h>
 
@@ -41,12 +42,20 @@ int32_t StreamReader::peekInt32() {
 }
 
 
-StreamReader::StreamReader(FILE* file)
-	:bits_(8),file_(file)
+StreamReader::StreamReader(const char* fname)
+	:bits_(8)
 {
+    file_ = ::fopen(fname, "r");
+    if (file_==nullptr){
+        throw Exception("error opening file");
+    }
+    ::fseek(file_, 0, SEEK_END);
+    readable_ = ftell(file_);
+    ::fseek(file_, 0, SEEK_SET);
 }
 StreamReader::~StreamReader() {
-	::fclose(file_);
+    if (file_)
+        ::fclose(file_);
 }
 
 uint32_t StreamReader::readBits(uint32_t bits) {

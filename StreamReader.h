@@ -18,7 +18,8 @@ private:
 
 class StreamReader {
 public:
-	StreamReader(FILE*);
+	explicit StreamReader(const char *);
+	//StreamReader(FILE*);
 	int32_t peekInt32();
 	int16_t peekInt16();
 	int8_t peekInt8();
@@ -39,6 +40,8 @@ private:
 	uint32_t bits_;
 	template <class T> T peekInt();
 	FILE* file_;
+    size_t fileSz;
+    size_t readable_;
 	Buffer buffer_;
 };
 

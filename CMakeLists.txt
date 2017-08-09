@@ -1,5 +1,5 @@
 project (gif89a CXX)
-add_executable(gif89a main.cpp StreamReader.cpp Logging.cpp Exception.cpp Buffer.cpp)
+add_executable(gif89a main.cpp StreamReader.cpp Logging.cpp Exception.cpp Buffer.cpp Decoder.cpp)
 set (CMAKE_CXX_FLAGS "-Wall -Wextra -Werror -Wconversion -Wunused -Wno-unused-parameter -Wold-style-cast -Woverloaded-virtual -Wpointer-arith -Wshadow -Wwrite-strings -march=native" ) 
 set (CMAKE_CXX_COMPILER "g++")
 set (CMAKE_CXX_FLAGS_DEBUG "-O0 -g3")
