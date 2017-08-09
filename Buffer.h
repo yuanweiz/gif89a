@@ -1,6 +1,7 @@
 #ifndef __BUFFER_H
 #define __BUFFER_H
 #include <sys/types.h>
+#include <stdio.h>
 class Buffer {
 public:
 	Buffer(); 
@@ -12,9 +13,10 @@ public:
 	void add(size_t);
 	char* peek();
 	size_t readable();
-	size_t start_, end_;
+    size_t readFile(FILE*);
 //const int N = 65536;
 private:
+	size_t start_, end_;
 	char data_[65536];
 };
 #endif// __BUFFER_H

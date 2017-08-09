@@ -30,3 +30,12 @@ void Buffer::append(const char*src, size_t sz) {
 void Buffer::append(char c){
     data_[end_++] = c;
 }
+size_t Buffer::readFile(FILE* fp){
+    auto avail = readable();
+    ::memmove(data_, peek(), avail);
+    start_ = 0;
+    end_ = avail;
+    auto sz= ::fread(data_ + end_, 1,sizeof(data_) - end_,fp);
+    end_ += sz;
+    return sz;
+}

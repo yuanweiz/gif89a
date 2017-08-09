@@ -6,11 +6,24 @@ struct Color {
 	uint8_t r, g, b;
 };
 
+struct GraphicCtrlBlk{
+    uint8_t intro; //expected to be 0x21
+    uint8_t label; //expected to be 0xf9
+    uint8_t sz; //expected to be 4
+    uint8_t transp:1;
+    uint8_t userInput:1;
+    uint8_t disposalMethod:3;
+    uint8_t reserved:3;
+    uint16_t delay;
+    uint8_t transpIdx;
+    uint8_t term;
+};
+
 struct ImgDesc {
 	void * head() { return &imgSep; }
 	static size_t size() { return 10; }
 	uint8_t _pad1;
-	uint8_t imgSep;
+	uint8_t imgSep; //expect  DESC_INTRO
 	uint16_t left;
 	uint16_t top;
 	uint16_t width;

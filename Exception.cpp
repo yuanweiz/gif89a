@@ -34,8 +34,8 @@ void backTrace(std::string & callstack_)
 		for (int i = 0; i < nptrs; ++i)
 		{
 			// TODO demangle funcion name with abi::__cxa_demangle
-			callstack_.append(strings[i]);
 			callstack_.push_back('\n');
+			callstack_.append(strings[i]);
 		}
 		free(strings);
 	}

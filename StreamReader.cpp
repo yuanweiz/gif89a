@@ -96,16 +96,26 @@ void StreamReader::retrieveString(void * dst, size_t sz) {
 	buffer_.retrieveString(dst, sz);
 }
 
-void StreamReader::readFile(size_t sz) {
-	char * buf = new char[sz];
-	auto nRead = fread(buf,1, sz, file_);
-	buffer_.append(buf, nRead);
-	delete[] buf;
+void StreamReader::retrieve( size_t sz) {
+	buffer_.retrieve( sz);
 }
 
-size_t StreamReader::readable() {
-	return buffer_.readable();
-}
+//void StreamReader::readFile(size_t sz) {
+//	char * buf = new char[sz];
+//	auto nRead = fread(buf,1, sz, file_);
+//	buffer_.append(buf, nRead);
+//	delete[] buf;
+//}
+
 uint32_t StreamReader::remainingBits() {
 	return bits_;
+}
+
+size_t StreamReader::requireBytes(size_t n){
+    auto avail = buffer_.readable();
+    if (avail >= n)return n;
+    //try read more bytes
+    buffer_.readFile(file_);
+    avail = buffer_.readable();
+    return avail < n? avail: n;
 }

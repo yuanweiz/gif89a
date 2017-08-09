@@ -28,11 +28,7 @@ public:
 	int8_t readInt8();
 	void retrieveString(void *, size_t);
 	void retrieve(size_t);
-	//void retrieveInt32();
-	//void retrieveInt16();
-	//void retrieveInt8();
-	size_t readable();
-	void readFile(size_t);
+	size_t requireBytes(size_t);
     uint32_t remainingBits();
 	uint32_t readBits(uint32_t);
 	~StreamReader();
