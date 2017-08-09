@@ -25,8 +25,8 @@ LogStream& operator<< (LogStream& s, const LogHelper& h){
 }
 int main() {
     try {
-        //Decoder decoder ("/home/ywz/Pictures/a.gif");
-        //decoder.decode();
+        Decoder decoder ("/home/ywz/Pictures/a.gif");
+        decoder.decode();
     }
 
 	catch (Exception& ex) {
@@ -65,30 +65,6 @@ int main() {
         putchar('\n');
     }
 
-    std::vector<std::string> dict{"A","B","C","D","CLEAR","STOP"};
-    std::string dec;
-    std::string prefix;
-    for (size_t i=0;i< out.size();++i){
-        size_t tok = out[i];
-        if (i==0) {
-            dec.append(dict[tok]);
-            continue;
-        }
-        auto & prev = dict[out[i-1]]; //DANGEROUS for malformed input
-        std::string newEntry;
-        assert (tok <=dict.size());
-        if (tok == dict.size()){
-            newEntry = prev+prev[0];
-        }
-        else {
-            newEntry = prev+dict[tok][0];
-        }
-        dict.push_back(newEntry);
-        LOG_DEBUG << "New entry: " << dict.size()-1 <<"=" << newEntry;
-        dec.append(dict[tok]);
-    }
-    LOG_DEBUG << dec;
-    LOG_DEBUG << str;
 	//getchar();
 	return 0;
 }

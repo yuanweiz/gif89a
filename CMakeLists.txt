@@ -4,3 +4,8 @@ set (CMAKE_CXX_FLAGS "-Wall -Wextra -Werror -Wconversion -Wunused -Wno-unused-pa
 set (CMAKE_CXX_COMPILER "g++")
 set (CMAKE_CXX_FLAGS_DEBUG "-O0 -g3")
 set (CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG")
+
+find_package(GIF)
+if (GIF_FOUND)
+    add_subdirectory (tests)
+endif()

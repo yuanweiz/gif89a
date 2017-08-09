@@ -7,6 +7,8 @@
 #include "Logging.h"
 #include "Types.h"
 
+using namespace std;
+
 const uint8_t EXT_INTRO = 0x21;
 const uint8_t DESC_INTRO = 0x2c;
 const uint8_t TERM_INTRO = 0x3b; //aka TRAILER
@@ -16,6 +18,16 @@ const uint8_t CMT_EXT = 0xfe;
 const uint8_t APP_EXT = 0xff;
 const uint8_t TXT_EXT = 0x01;
 const uint8_t GRA_CTL_EXT = 0xf9;
+
+struct Img{
+    Img()=default;
+    Img(const Img&) = delete;
+    Img(Img&&) noexcept = default;
+    unique_ptr<GraphicCtrlBlk> ctrlBlk; //optional
+    ImgDesc desc;
+    vector<Color> localColorTbl;
+    vector<uint32_t> lzw;
+};
 
 class Decoder::Impl{
     public:
@@ -81,12 +93,13 @@ class Decoder::Impl{
     void parseDesc();
     void parseImageDesc();
     void parseGraphicBlock();
-
     void eatSubblock();
+    void parseLzw(Img&);
 
     StreamReader reader_;
     LgcScrDesc lgcScrDesc_;
-    std::vector<Color> glbColorTbl_;
+    vector<Color> glbColorTbl_;
+    vector<Img> imgs_;
 };
 
 
@@ -145,10 +158,12 @@ void Decoder::Impl::parseGraphicBlock(){
         uint8_t u8[2];
     };
     u16 = reader_.peekInt16();
+    Img img;
     do {
         if (u8[0]==EXT_INTRO ){
             //optional block
-            GraphicCtrlBlk graphicCtrlBlk;
+            img.ctrlBlk.reset(new GraphicCtrlBlk);
+            GraphicCtrlBlk & graphicCtrlBlk=*img.ctrlBlk;
             size_t sz = sizeof (GraphicCtrlBlk);
             if (reader_.requireBytes(sz) < sz) break;
             reader_.retrieveString(&graphicCtrlBlk, sz);
@@ -158,11 +173,11 @@ void Decoder::Impl::parseGraphicBlock(){
                 break;
         }
         //read image Descriptor
-        ImgDesc desc;
+        ImgDesc & desc=img.desc;
         if (reader_.requireBytes(desc.size())< desc.size()) break;
         reader_.retrieveString(desc.head(),desc.size());
         if (desc.imgSep != DESC_INTRO) break;
-        std::vector<Color> localColorTbl(desc.localTblSz);
+        auto & localColorTbl = img.localColorTbl;
         if (desc.localTbl) {
             //optional local color table
             size_t nBytes = desc.localTblSz*3;
@@ -172,28 +187,80 @@ void Decoder::Impl::parseGraphicBlock(){
             }
             reader_.retrieveString(localColorTbl.data(), nBytes);
         }
-        uint8_t lzwCodeSz = reader_.readInt8();
-        uint8_t blkSz = reader_.readInt8();
-        uint32_t nBits=lzwCodeSz+1;
-        for (int maxBits = blkSz * 8; maxBits>=0 ;){
-            maxBits-=nBits;
-            if (maxBits <0)
-                break;
-            uint32_t tmp = reader_.readBits(nBits);
-            LOG_DEBUG << tmp;
-        }
-        nBits = reader_.remainingBits();
-        if (nBits < 8)
-            reader_.readBits(nBits);
-        assert(reader_.remainingBits()==8);
+        parseLzw(img);
         auto term = reader_.readInt8();
         if (term!=0x00) break;
-
+        imgs_.push_back(std::move(img));
         return;
     }while(false);
     throw ParseError("GraphicCtrlBlk");
 }
-void Decoder::Impl::parseImageDesc(){
+void Decoder::Impl::parseLzw(Img & img){
+    uint8_t u8 = reader_.readInt8();
+    uint32_t lzwCodeSz = u8; //boost to int32
+    uint8_t blkSz = reader_.readInt8();
+    uint32_t nBits=lzwCodeSz+1;
+
+    const uint32_t CLEAR=(1<<lzwCodeSz);
+    const uint32_t STOP = CLEAR+1;
+    std::vector<std::string> dict(STOP);
+    auto & res = img.lzw;
+    uint32_t prevCode=0;
+    bool first = true;
+
+    int maxBits=blkSz*8;
+    while (true){
+        if ( static_cast<size_t>(1<<nBits)< dict.size())
+            nBits++;
+        maxBits-=nBits;
+        if ( maxBits < 0) break;
+        auto currIdx= reader_.readBits(nBits);
+        if (currIdx==STOP){
+            break;
+        }
+        else if (currIdx == CLEAR){
+            dict.clear();
+            dict.resize(STOP);
+            continue;
+        }
+        else if (currIdx < CLEAR){
+            res.push_back(currIdx);
+            continue;
+        } 
+        auto & curr = dict[currIdx];
+        if (first) {
+            //FIXME: very inefficient
+            std::copy(curr.begin(),curr.end(), std::back_inserter(res));
+            continue;
+        }
+        auto & prev = dict[prevCode]; //DANGEROUS for malformed input
+        std::string newEntry;
+        assert (currIdx <=dict.size());
+        if (currIdx == dict.size()){
+            newEntry = prev+prev[0];
+        }
+        else {
+            newEntry = prev+curr[0];
+        }
+        dict.push_back(newEntry);
+        //LOG_DEBUG << "New entry: " << dict.size()-1 <<"=" << newEntry;
+        std::copy(curr.begin(),curr.end(), std::back_inserter(res));
+    }
+
+    /*
+       for (int maxBits = blkSz * 8; maxBits>=0 ;){
+       maxBits-=nBits;
+       if (maxBits <0)
+       break;
+       uint32_t tmp = reader_.readBits(nBits);
+       img.lzw.push_back(tmp);
+       LOG_DEBUG << tmp;
+       }
+       */
+    nBits = reader_.remainingBits();
+    if (nBits < 8)
+        reader_.readBits(nBits);
+    assert(reader_.remainingBits()==8);
 }
 void Decoder::Impl::parseGlobalColorTbl()
 {
